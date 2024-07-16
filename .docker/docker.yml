@@ -1,0 +1,61 @@
+version: '3.8'
+services:
+  chrome:
+    image: selenium/standalone-chrome
+    shm_size: 2gb
+    privileged: true
+    environment:
+      - VNC_NO_PASSWORD=1
+    ports:
+      - ${SERVICE_CHROME_HOST_PORT}:4444
+      - ${SERVICE_CHROME_VNC_PORT}:5900 
+    healthcheck:
+      test: chromedriver --version
+  #chrome_video:
+  #  image: selenium/video
+  #  volumes:
+  #    - ./../videos:/videos
+  #  depends_on:
+  #    - chrome
+  #  environment:
+  #    - DISPLAY_CONTAINER_NAME=chrome
+  #    - FILE_NAME=chrome_video.mp4
+  benchmark:
+    image: wrk_20240426:latest
+    #build:
+    #  context: ./../../
+    #  dockerfile: ./Dockerfile_benchmark
+    init: true
+    working_dir: /app/
+    volumes:
+      - ./../../flying_colors/project/performance/:/app/performance/
+    deploy:
+      resources:
+        limits:
+          cpus: '2.00'
+          memory: 2024M
+        reservations:
+          cpus: '0.25'
+          memory: 20M
+  project:
+    build:
+      context: ./../../
+      dockerfile: ./Dockerfile_project
+    init: true
+    working_dir: /app/nightwatch
+    volumes:
+      - ./../../flying_colors/project/e2e/:/app/nightwatch/test
+      - ./../../flying_colors/results:/app/nightwatch/results
+      - ./../../flying_colors/nightwatch.conf.js:/app/nightwatch/nightwatch.conf.js
+      - ./../../flying_colors/package.json:/app/nightwatch/package.json
+      - ./../../flying_colors/index.js:/app/nightwatch/index.js
+      - ./../../flying_colors/api:/app/api
+    #command: bash -c "ls -alp && nodemon -e py --exec nodejs index.js"  
+    env_file:
+      - ./../.env
+    network_mode: host
+    environment:
+      - BROWSER=chrome
+    depends_on:
+      chrome:
+        condition: service_healthy
