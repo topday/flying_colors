@@ -1,0 +1,55 @@
+FROM ubuntu:20.04 as build
+
+RUN apt-get update && apt-get install git zip build-essential -y
+
+WORKDIR /tmp
+RUN git clone "https://github.com/wg/wrk"
+
+WORKDIR /tmp/wrk
+RUN make
+
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+#RUN apk --no-cache add \
+RUN apt update -y && apt install -y \
+		libssl-dev\
+    nodejs \
+    npm \
+    curl \
+    wget \
+    luarocks \
+  && rm -rf \
+    /tmp/* \
+    /root/.npm
+
+RUN apt-get update && apt-get install netbase -y && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /tmp/wrk/wrk /usr/local/bin/
+
+RUN luarocks install lunajson
+RUN luarocks install luasocket
+RUN luarocks install luasec
+# RUN luarocks install lua-requests
+
+WORKDIR /usr/lib/nightwatch
+COPY flying_colors/package.json ./
+RUN npm install --production \
+  # Cleaning up obsolete files:
+  && rm -rf \
+  /tmp/* \
+  /root/.npm
+
+RUN npm i -g n
+RUN n stable
+
+RUN npm i -g nodemon 
+
+# Set NODE_PATH to be able to require installed packages:
+ENV NODE_PATH=/usr/lib/nightwatch/node_modules
+
+# Extend path to be able to run installed binaries:
+ENV PATH=$PATH:/usr/lib/nightwatch/node_modules/.bin
+
+ENTRYPOINT ["/bin/sh", "-c", "while true; do sleep 10; done"]

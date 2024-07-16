@@ -1,0 +1,31 @@
+FROM python:3.8
+
+RUN apt update -y && apt install -y \
+    nodejs \
+    npm \
+    apache2 \
+  && rm -rf \
+    /tmp/* \
+    /root/.npm
+
+WORKDIR /usr/lib/nightwatch
+COPY flying_colors/package.json ./
+
+RUN npm install --production \
+  # Cleaning up obsolete files:
+  && rm -rf \
+  /tmp/* \
+  /root/.npm
+
+RUN npm i -g n
+RUN n stable
+
+RUN npm i -g nodemon 
+
+# Set NODE_PATH to be able to require installed packages:
+ENV NODE_PATH=/usr/lib/nightwatch/node_modules
+
+# Extend path to be able to run installed binaries:
+ENV PATH=$PATH:/usr/lib/nightwatch/node_modules/.bin
+
+ENTRYPOINT ["/bin/sh", "-c", "while true; do sleep 10; done"]

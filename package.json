@@ -1,0 +1,12 @@
+{
+  "name": "nightwatch-docker",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev:test": "rm -rf results/* && nightwatch -e ${BROWSER} --output results --verbose"
+  },
+  "dependencies": {
+    "nightwatch": "^2.2.2"
+  }
+}
